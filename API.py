@@ -1,4 +1,4 @@
-from machine import Pin, PWM, ADC, time_pulse_us
+from machine import Pin, PWM, ADC, time_pulse_us, UART
 from time import sleep, sleep_us
 import sys
 import _thread
@@ -118,9 +118,46 @@ def cm_F():
     ultrason_duration = time_pulse_us(echo_pin_F, 1, 30000)
     return SOUND_SPEED * ultrason_duration / 20000
 
+def lidar_B():
+    uart = UART(1, baudrate=115200, tx=Pin(8), rx=Pin(9))
+    buffer = bytearray(9)
+    distance = 0
+    if uart.any() >= 9:
+            byte = uart.read(1)
+            if byte == b'\x59':
+                next_byte = uart.read(1)
+                if next_byte == b'\x59':
+                    buffer[0] = 0x59
+                    buffer[1] = 0x59
+                    rest = uart.read(7)
+                    if len(rest) == 7:
+                        buffer[2:] = rest
+                        distance = buffer[2] + (buffer[3] << 8)
+                        strength = buffer[4] + (buffer[5] << 8)
+                        #print("Distance: {} cm | Strength: {}".format(distance, strength))
+    return distance
+
+def lidar_E():
+    uart = UART(0, baudrate=115200, tx=Pin(16), rx=Pin(17))
+    buffer = bytearray(9)
+    distance = 0
+    if uart.any() >= 9:
+            byte = uart.read(1)
+            if byte == b'\x59':
+                next_byte = uart.read(1)
+                if next_byte == b'\x59':
+                    buffer[0] = 0x59
+                    buffer[1] = 0x59
+                    rest = uart.read(7)
+                    if len(rest) == 7:
+                        buffer[2:] = rest
+                        distance = buffer[2] + (buffer[3] << 8)
+                        strength = buffer[4] + (buffer[5] << 8)
+                        #print("Distance: {} cm | Strength: {}".format(distance, strength))
+    return distance
+
 def background_thread():
     global IS_BUTTON_PRESSED
-    global cm_F
     while (1):
         if (_button.value() == 0):
             IS_BUTTON_PRESSED = True
