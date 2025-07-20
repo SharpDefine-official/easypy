@@ -38,6 +38,8 @@ TRIG_PULSE_DURATION_US=10
 trig_pin_F = Pin(27, Pin.OUT) # white
 echo_pin_F = Pin(26, Pin.IN)  # yellow
 
+_lidar_B = 0
+_lidar_E = 0
 def init():
     for i in range(4):
         LED[i].duty_u16(0)
@@ -119,9 +121,10 @@ def cm_F():
     return SOUND_SPEED * ultrason_duration / 20000
 
 def lidar_B():
+    global _lidar_B
     uart = UART(1, baudrate=115200, tx=Pin(8), rx=Pin(9))
     buffer = bytearray(9)
-    distance = 0
+    sleep(0.1)
     if uart.any() >= 9:
             byte = uart.read(1)
             if byte == b'\x59':
@@ -132,15 +135,15 @@ def lidar_B():
                     rest = uart.read(7)
                     if len(rest) == 7:
                         buffer[2:] = rest
-                        distance = buffer[2] + (buffer[3] << 8)
+                        _lidar_B = buffer[2] + (buffer[3] << 8)
                         strength = buffer[4] + (buffer[5] << 8)
-                        #print("Distance: {} cm | Strength: {}".format(distance, strength))
-    return distance
+    return _lidar_B
 
 def lidar_E():
+    global _lidar_E
     uart = UART(0, baudrate=115200, tx=Pin(16), rx=Pin(17))
     buffer = bytearray(9)
-    distance = 0
+    sleep(0.1)
     if uart.any() >= 9:
             byte = uart.read(1)
             if byte == b'\x59':
@@ -151,10 +154,10 @@ def lidar_E():
                     rest = uart.read(7)
                     if len(rest) == 7:
                         buffer[2:] = rest
-                        distance = buffer[2] + (buffer[3] << 8)
+                        _lidar_E = buffer[2] + (buffer[3] << 8)
                         strength = buffer[4] + (buffer[5] << 8)
                         #print("Distance: {} cm | Strength: {}".format(distance, strength))
-    return distance
+    return _lidar_E
 
 def background_thread():
     global IS_BUTTON_PRESSED
